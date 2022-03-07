@@ -104,9 +104,7 @@ class Message(object):
         return len(self.__unicode__())
 
     def __str__(self):
-        if py3k:
-            return self.data.decode(self.encoding)
-        return self.data
+        return self.data.decode(self.encoding) if py3k else self.data
 
     def __unicode__(self):
         return self.data.decode(self.encoding)
@@ -153,9 +151,7 @@ class CloseControlMessage(Message):
         self.reason = reason
 
     def __str__(self):
-        if py3k:
-            return self.reason.decode('utf-8')
-        return self.reason
+        return self.reason.decode('utf-8') if py3k else self.reason
 
     def __unicode__(self):
         return self.reason.decode(self.encoding)

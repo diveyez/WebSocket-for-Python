@@ -215,13 +215,12 @@ class WebSocketManager(threading.Thread):
 
         if poller:
             self.poller = poller
+        elif hasattr(select, "epoll"):
+            self.poller = EPollPoller()
+            logger.info("Using epoll")
         else:
-            if hasattr(select, "epoll"):
-                self.poller = EPollPoller()
-                logger.info("Using epoll")
-            else:
-                self.poller = SelectPoller()
-                logger.info("Using select as epoll is not available")
+            self.poller = SelectPoller()
+            logger.info("Using select as epoll is not available")
 
     def __len__(self):
         return len(self.websockets)
@@ -355,11 +354,7 @@ class WebSocketManager(threading.Thread):
         """
         with self.lock:
             websockets = self.websockets.copy()
-            if py3k:
-                ws_iter = iter(websockets.values())
-            else:
-                ws_iter = websockets.itervalues()
-
+            ws_iter = iter(websockets.values()) if py3k else websockets.itervalues()
         for ws in ws_iter:
             if not ws.terminated:
                 try:

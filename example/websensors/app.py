@@ -184,11 +184,10 @@ class DrawingBoardWebSocketPlugin(WebSocketPlugin):
             return
 
         board = self.boards[board_id]
-        
+
         for (participant_id, ws) in board['handlers'].iteritems():
-            if from_participant_id != participant_id:
-                if not ws.terminated:
-                    ws.send(state)
+            if from_participant_id != participant_id and not ws.terminated:
+                ws.send(state)
 
 
 def render_template(template):

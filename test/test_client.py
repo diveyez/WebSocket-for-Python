@@ -186,6 +186,7 @@ class BasicClientTest(unittest.TestCase):
     @patch('ws4py.client.socket')
     def test_invalid_response_headers(self, sock):
 
+        status_line = b"HTTP/1.1 101 Switching Protocols"
         for key_header, invalid_value in ((b'upgrade', b'boom'),
                                           (b'connection', b'bim')):
             s = MagicMock()
@@ -194,18 +195,17 @@ class BasicClientTest(unittest.TestCase):
                                               ("127.0.0.1", 80, 0, 0))]
             c = WebSocketBaseClient(url="ws://127.0.0.1/?token=value")
 
-            status_line = b"HTTP/1.1 101 Switching Protocols"
             headers = {
-                b"connection": b"Upgrade",
-                b"Sec-Websocket-Version": b"13",
-                b"Content-Type": b"text/plain;charset=utf-8",
-                b"Sec-Websocket-Accept": b64encode(sha1(c.key + WS_KEY).digest()),
-                b"upgrade": b"websocket",
-                b"Date": b"Sun, 26 Jul 2015 12:32:55 GMT",
-                b"Server": b"ws4py/test"
+                b'connection': b'Upgrade',
+                b'Sec-Websocket-Version': b'13',
+                b'Content-Type': b'text/plain;charset=utf-8',
+                b'Sec-Websocket-Accept': b64encode(sha1(c.key + WS_KEY).digest()),
+                b'upgrade': b'websocket',
+                b'Date': b'Sun, 26 Jul 2015 12:32:55 GMT',
+                b'Server': b'ws4py/test',
+                key_header: invalid_value,
             }
 
-            headers[key_header] = invalid_value
 
             request = [status_line] + [k + b" : " + v for (k, v) in headers.items()] + [b'\r\n']
             s.recv.return_value = b"\r\n".join(request)
@@ -239,7 +239,7 @@ class ThreadedClientTest(unittest.TestCase):
             b"\r\n"
         ])
 
-        for i in range(100):
+        for _ in range(100):
             time.sleep(0.1)
             yield Frame(opcode=OPCODE_TEXT, body=b'hello',
                         fin=1).build()

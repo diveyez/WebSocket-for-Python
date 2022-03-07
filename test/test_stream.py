@@ -260,7 +260,7 @@ class WSStreamTest(unittest.TestCase):
         s.parser.send(f)
         self.assertEqual(s.message.completed, False)
 
-        for i in range(3):
+        for _ in range(3):
             f = Frame(opcode=OPCODE_CONTINUATION, body=msg, fin=0, masking_key=os.urandom(4)).build()
             s.parser.send(f)
             self.assertEqual(s.has_message, False)
@@ -317,7 +317,7 @@ class WSStreamTest(unittest.TestCase):
         s.parser.send(f)
         self.assertEqual(s.has_message, False)
 
-        for i in range(3):
+        for _ in range(3):
             f = Frame(opcode=OPCODE_CONTINUATION, body=msg, fin=0, masking_key=key).build()
             s.parser.send(f)
             self.assertEqual(s.has_message, False)

@@ -28,9 +28,7 @@ if sys.version_info >= (3, 0):
         fileobj.detach()
 
     def ord(c):
-        if isinstance(c, int):
-            return c
-        return _ord(c)
+        return c if isinstance(c, int) else _ord(c)
 else:
     py3k = False
     from urlparse import urlsplit

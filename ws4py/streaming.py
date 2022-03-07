@@ -127,10 +127,7 @@ class Stream(object):
         Checks if the stream has received any message
         which, if fragmented, is now completed.
         """
-        if self.message is not None:
-            return self.message.completed
-
-        return False
+        return self.message.completed if self.message is not None else False
 
     def close(self, code=1000, reason=''):
         """
@@ -198,7 +195,7 @@ class Stream(object):
                             msg = CloseControlMessage(code=1002, reason='Missing masking when expected')
                             self.errors.append(msg)
                             break
-                        elif frame.masking_key and not self.expect_masking:
+                        elif frame.masking_key:
                             msg = CloseControlMessage(code=1002, reason='Masked when not expected')
                             self.errors.append(msg)
                             break
@@ -250,13 +247,12 @@ class Stream(object):
 
                         m.extend(some_bytes)
                         m.completed = (frame.fin == 1)
-                        if m.opcode == OPCODE_TEXT:
-                            if some_bytes:
-                                is_valid, end_on_code_point, _, _ = utf8validator.validate(some_bytes)
+                        if m.opcode == OPCODE_TEXT and some_bytes:
+                            is_valid, end_on_code_point, _, _ = utf8validator.validate(some_bytes)
 
-                                if not is_valid or (m.completed and not end_on_code_point):
-                                    self.errors.append(CloseControlMessage(code=1007, reason='Invalid UTF-8 bytes'))
-                                    break
+                            if not is_valid or (m.completed and not end_on_code_point):
+                                self.errors.append(CloseControlMessage(code=1007, reason='Invalid UTF-8 bytes'))
+                                break
 
                     elif frame.opcode == OPCODE_CLOSE:
                         code = 1005
@@ -269,7 +265,7 @@ class Stream(object):
                             try:
                                 # at this stage, some_bytes have been unmasked
                                 # so actually are held in a bytearray
-                                code = int(unpack("!H", bytes(some_bytes[0:2]))[0])
+                                code = int(unpack("!H", bytes(some_bytes[:2]))[0])
                             except struct.error:
                                 reason = 'Failed at decoding closing code'
                             else:

@@ -81,10 +81,8 @@ class WebSocketBaseClient(WebSocket):
         self.exclude_headers = exclude_headers or []
         self.exclude_headers = [x.lower() for x in self.exclude_headers]
 
-        if self.scheme == "wss":
-            # Prevent check_hostname requires server_hostname (ref #187)
-            if "cert_reqs" not in self.ssl_options:
-                self.ssl_options["cert_reqs"] = ssl.CERT_NONE
+        if self.scheme == "wss" and "cert_reqs" not in self.ssl_options:
+            self.ssl_options["cert_reqs"] = ssl.CERT_NONE
 
         self._parse_url()
 
@@ -167,22 +165,16 @@ class WebSocketBaseClient(WebSocket):
         elif scheme == "wss":
             if not self.port:
                 self.port = 443
-        elif scheme in ('ws+unix', 'wss+unix'):
-            pass
-        else:
+        elif scheme not in ('ws+unix', 'wss+unix'):
             raise ValueError("Invalid scheme: %s" % scheme)
 
-        if parsed.path:
-            resource = parsed.path
-        else:
-            resource = "/"
-
+        resource = parsed.path or "/"
         if '+unix' in scheme:
             self.unix_socket_path = resource
             resource = '/'
 
         if parsed.query:
-            resource += "?" + parsed.query
+            resource += f"?{parsed.query}"
 
         self.scheme = scheme
         self.resource = resource
@@ -271,13 +263,10 @@ class WebSocketBaseClient(WebSocket):
 
             scheme, url = self.url.split(":", 1)
             parsed = urlsplit(url, scheme="http")
-            if parsed.hostname:
-                self.host = parsed.hostname
-            else:
-                self.host = 'localhost'
-            origin = scheme + '://' + self.host
+            self.host = parsed.hostname or 'localhost'
+            origin = f'{scheme}://{self.host}'
             if parsed.port:
-                origin = origin + ':' + str(parsed.port)
+                origin = f'{origin}:{str(parsed.port)}'
             headers.append(('Origin', origin))
 
         headers = [x for x in headers if x[0].lower() not in self.exclude_headers]
@@ -291,8 +280,11 @@ class WebSocketBaseClient(WebSocket):
         """
         headers = self.handshake_headers
         request = [("GET %s HTTP/1.1" % self.resource).encode('utf-8')]
-        for header, value in headers:
-            request.append(("%s: %s" % (header, value)).encode('utf-8'))
+        request.extend(
+            ("%s: %s" % (header, value)).encode('utf-8')
+            for header, value in headers
+        )
+
         request.append(b'\r\n')
 
         return b'\r\n'.join(request)

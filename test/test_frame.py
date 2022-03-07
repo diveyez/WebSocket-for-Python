@@ -79,8 +79,7 @@ class WSFrameBuilderTest(unittest.TestCase):
         self.assertRaises(ValueError, f.build)
 
     def test_masking(self):
-        if py3k: mask = b"7\xfa!="
-        else: mask = "7\xfa!="
+        mask = b"7\xfa!=" if py3k else "7\xfa!="
         f = Frame(opcode=OPCODE_TEXT,
                   body=b'Hello',
                   masking_key=mask, fin=1)
@@ -114,7 +113,7 @@ class WSFrameParserTest(unittest.TestCase):
         bytes = Frame(opcode=OPCODE_TEXT, body=b'hello', fin=1).build()
 
         f = Frame()
-        self.assertEqual(f.parser.send(bytes[0:1]), 1)
+        self.assertEqual(f.parser.send(bytes[:1]), 1)
         self.assertEqual(f.fin, 1)
         self.assertEqual(f.rsv1, 0)
         self.assertEqual(f.rsv2, 0)
@@ -128,7 +127,7 @@ class WSFrameParserTest(unittest.TestCase):
         bytes = Frame(opcode=OPCODE_TEXT, body=b'hello', fin=1).build()
 
         f = Frame()
-        self.assertEqual(f.parser.send(bytes[0:1]), 1)
+        self.assertEqual(f.parser.send(bytes[:1]), 1)
         self.assertEqual(f.parser.send(bytes[1:2]), 5)
         f.parser.send(bytes[2:])
         self.assertEqual(f.body, b'hello')

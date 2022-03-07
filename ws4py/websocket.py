@@ -298,7 +298,7 @@ class WebSocket(object):
         """
         message_sender = self.stream.binary_message if binary else self.stream.text_message
 
-        if isinstance(payload, basestring) or isinstance(payload, bytearray):
+        if isinstance(payload, (basestring, bytearray)):
             m = message_sender(payload).single(mask=self.stream.always_mask)
             self._write(m)
 
@@ -357,10 +357,8 @@ class WebSocket(object):
         more data than what wanted initially.
         """
         data = b""
-        pending = self.sock.pending()
-        while pending:
+        while pending := self.sock.pending():
             data += self.sock.recv(pending)
-            pending = self.sock.pending()
         return data
 
     def once(self):
@@ -387,18 +385,14 @@ class WebSocket(object):
             logger.debug("WebSocket is already terminated")
             return False
         try:
-            b = b''
-            if self._is_secure:
-                b = self._get_from_pending()
+            b = self._get_from_pending() if self._is_secure else b''
             if not b and not self.buf:
                 b = self.sock.recv(self.reading_buffer_size)
             if not b and not self.buf:
                 return False
             self.buf += b
         except (socket.error, OSError, pyOpenSSLError) as e:
-            if hasattr(e, "errno") and e.errno == errno.EINTR:
-                pass
-            else:
+            if not hasattr(e, "errno") or e.errno != errno.EINTR:
                 self.unhandled_error(e)
                 return False
         else:

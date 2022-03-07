@@ -156,8 +156,7 @@ def run_python_wsgi_async(host="127.0.0.1", port=9010, async_=True):
     if async_:
         def middleware(app):
             def later(environ, start_response):
-                for part in app(environ, start_response):
-                    yield part
+                yield from app(environ, start_response)
             return later
         app = middleware(app)
     server = make_server(host, port, server_class=WSGIServer,

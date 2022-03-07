@@ -72,7 +72,7 @@ class Frame(object):
         if self.fin > 0x1:
             raise ValueError('FIN bit parameter must be 0 or 1')
 
-        if 0x3 <= self.opcode <= 0x7 or 0xB <= self.opcode:
+        if 0x3 <= self.opcode <= 0x7 or self.opcode >= 0xB:
             raise ValueError('Opcode cannot be a reserved opcode')
 
         ## +-+-+-+-+-------+
@@ -95,9 +95,7 @@ class Frame(object):
         ## +-+-+-+-+-------+-+-------------+ - - - - - - - - - - - - - - - +
         ## |     Extended payload length continued, if payload len == 127  |
         ## + - - - - - - - - - - - - - - - +-------------------------------+
-        if self.masking_key: mask_bit = 1 << 7
-        else: mask_bit = 0
-
+        mask_bit = 1 << 7 if self.masking_key else 0
         length = self.payload_length
         if length < 126:
             header += pack('!B', (mask_bit | length))
@@ -107,7 +105,7 @@ class Frame(object):
             header += pack('!B', (mask_bit | 127)) + pack('!Q', length)
         else:
             raise FrameTooLargeException()
-        
+
         ## + - - - - - - - - - - - - - - - +-------------------------------+
         ## |                               |Masking-key, if MASK set to 1  |
         ## +-------------------------------+-------------------------------+
@@ -245,11 +243,10 @@ class Frame(object):
                 b = (yield l)
                 if b is not None:
                     some_bytes = some_bytes + b
+        elif self.payload_length == len(buf):
+            some_bytes = buf
         else:
-            if self.payload_length == len(buf):
-                some_bytes = buf
-            else:
-                some_bytes = buf[:self.payload_length]
+            some_bytes = buf[:self.payload_length]
 
         self.body = some_bytes
         yield
@@ -265,8 +262,7 @@ class Frame(object):
 
         """
         masked = bytearray(data)
-        if py3k: key = self.masking_key
-        else: key = map(ord, self.masking_key)
+        key = self.masking_key if py3k else map(ord, self.masking_key)
         for i in range(len(data)):
             masked[i] = masked[i] ^ key[i%4]
         return masked

@@ -53,16 +53,20 @@ class WebSocketProtocol(asyncio.StreamReaderProtocol):
         return self._stream_reader
 
     def terminated(self, f):
-        if f.done() and not f.cancelled():
-            ex = f.exception()
-            if ex:
-                response = [b'HTTP/1.0 400 Bad Request']
-                response.append(b'Content-Length: 0')
-                response.append(b'Connection: close')
-                response.append(b'')
-                response.append(b'')
-                self.writer.write(CRLF.join(response))
-                self.ws.close_connection()
+        if not f.done() or f.cancelled():
+            return
+        ex = f.exception()
+        if ex:
+            response = [
+                b'HTTP/1.0 400 Bad Request',
+                b'Content-Length: 0',
+                b'Connection: close',
+                b'',
+                b'',
+            ]
+
+            self.writer.write(CRLF.join(response))
+            self.ws.close_connection()
 
     def close(self):
         """
@@ -142,8 +146,7 @@ class WebSocketProtocol(asyncio.StreamReaderProtocol):
 
         protocols = []
         ws_protocols = []
-        subprotocols = headers.get('Sec-WebSocket-Protocol')
-        if subprotocols:
+        if subprotocols := headers.get('Sec-WebSocket-Protocol'):
             for s in subprotocols.split(','):
                 s = s.strip()
                 if s in protocols:
@@ -151,8 +154,7 @@ class WebSocketProtocol(asyncio.StreamReaderProtocol):
 
         exts = []
         ws_extensions = []
-        extensions = headers.get('Sec-WebSocket-Extensions')
-        if extensions:
+        if extensions := headers.get('Sec-WebSocket-Extensions'):
             for ext in extensions.split(','):
                 ext = ext.strip()
                 if ext in exts:
@@ -162,19 +164,22 @@ class WebSocketProtocol(asyncio.StreamReaderProtocol):
         self.ws.extensions = ws_extensions
         self.ws.headers = headers
 
-        response = [req_protocol + b' 101 Switching Protocols']
-        response.append(b'Upgrade: websocket')
-        response.append(b'Content-Type: text/plain')
-        response.append(b'Content-Length: 0')
-        response.append(b'Connection: Upgrade')
-        response.append(b'Sec-WebSocket-Version:' + bytes(str(version), 'utf-8'))
-        response.append(b'Sec-WebSocket-Accept:' + base64.b64encode(sha1(key.encode('utf-8') + WS_KEY).digest()))
+        response = [
+            req_protocol + b' 101 Switching Protocols',
+            b'Upgrade: websocket',
+            b'Content-Type: text/plain',
+            b'Content-Length: 0',
+            b'Connection: Upgrade',
+            b'Sec-WebSocket-Version:' + bytes(str(version), 'utf-8'),
+            b'Sec-WebSocket-Accept:'
+            + base64.b64encode(sha1(key.encode('utf-8') + WS_KEY).digest()),
+        ]
+
         if ws_protocols:
             response.append(b'Sec-WebSocket-Protocol:' + b', '.join(ws_protocols))
         if ws_extensions:
             response.append(b'Sec-WebSocket-Extensions:' + b','.join(ws_extensions))
-        response.append(b'')
-        response.append(b'')
+        response.extend((b'', b''))
         self.writer.write(CRLF.join(response))
         yield from self.handle_websocket()
 

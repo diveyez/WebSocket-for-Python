@@ -17,13 +17,12 @@ if __name__ == '__main__':
     def incoming():
         while True:
             m = ws.receive()
-            if m is not None:
-                m = str(m)
-                print((m, len(m)))
-                if len(m) == 35:
-                    ws.close()
-                    break
-            else:
+            if m is None:
+                break
+            m = str(m)
+            print((m, len(m)))
+            if len(m) == 35:
+                ws.close()
                 break
         print(("Connection closed!",))
 

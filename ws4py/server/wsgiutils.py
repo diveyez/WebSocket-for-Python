@@ -123,8 +123,7 @@ class WebSocketWSGIApplication(object):
 
         ws_protocols = []
         protocols = self.protocols or []
-        subprotocols = environ.get('HTTP_SEC_WEBSOCKET_PROTOCOL')
-        if subprotocols:
+        if subprotocols := environ.get('HTTP_SEC_WEBSOCKET_PROTOCOL'):
             for s in subprotocols.split(','):
                 s = s.strip()
                 if s in protocols:
@@ -132,8 +131,7 @@ class WebSocketWSGIApplication(object):
 
         ws_extensions = []
         exts = self.extensions or []
-        extensions = environ.get('HTTP_SEC_WEBSOCKET_EXTENSIONS')
-        if extensions:
+        if extensions := environ.get('HTTP_SEC_WEBSOCKET_EXTENSIONS'):
             for ext in extensions.split(','):
                 ext = ext.strip()
                 if ext in exts:

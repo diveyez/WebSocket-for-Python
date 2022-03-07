@@ -52,8 +52,7 @@ class WebSocketWSGIHandler(WSGIHandler):
             self.socket = None
             self.rfile.close()
 
-            ws = self.environ.pop('ws4py.websocket', None)
-            if ws:
+            if ws := self.environ.pop('ws4py.websocket', None):
                 ws_greenlet = self.server.pool.track(ws)
                 # issue #170
                 # in gevent 1.1 socket will be closed once application returns
@@ -80,8 +79,7 @@ class GEventWebSocketPool(Pool):
         logger.info("Terminating server and all connected websockets")
         for greenlet in list(self):
             try:
-                websocket = greenlet._run.im_self
-                if websocket:
+                if websocket := greenlet._run.im_self:
                     websocket.close(1001, 'Server is shutting down')
             except:
                 pass

@@ -21,13 +21,12 @@ class buildfor2or3(build_py):
         This is in reference to issue #123.
         """
         modules = build_py.find_package_modules(self, package, package_dir)
-        amended_modules = []
-        for (package_, module, module_file) in modules:
-            if sys.version_info < (3,):
-                if module in ['async_websocket', 'tulipserver']:
-                    continue
-            amended_modules.append((package_, module, module_file))
-        return amended_modules
+        return [
+            (package_, module, module_file)
+            for (package_, module, module_file) in modules
+            if sys.version_info >= (3,)
+            or module not in ['async_websocket', 'tulipserver']
+        ]
 
 
 # extract version

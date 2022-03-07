@@ -154,8 +154,7 @@ class WebSocketTool(Tool):
                 raise HandshakeError("WebSocket key's length is invalid")
 
         protocols = protocols or []
-        subprotocols = request.headers.get('Sec-WebSocket-Protocol')
-        if subprotocols:
+        if subprotocols := request.headers.get('Sec-WebSocket-Protocol'):
             ws_protocols = []
             for s in subprotocols.split(','):
                 s = s.strip()
@@ -163,8 +162,7 @@ class WebSocketTool(Tool):
                     ws_protocols.append(s)
 
         exts = extensions or []
-        extensions = request.headers.get('Sec-WebSocket-Extensions')
-        if extensions:
+        if extensions := request.headers.get('Sec-WebSocket-Extensions'):
             for ext in extensions.split(','):
                 ext = ext.strip()
                 if ext in exts:
